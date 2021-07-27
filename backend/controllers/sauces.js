@@ -63,9 +63,28 @@ exports.modifySauce = (req, res, next) => {
 };
 
 exports.likeSauce = (req, res, next) => {
-
-}
-
-exports.dislikeSauce = (req, res, next) => {
-
-}
+  if(req.body.like ==1){ //dans le cas ou l'utilisateur like la sauce
+    Sauce.updateOne({_id: req.params.id}, {$inc:{likes:1}, $push:{usersLiked:req.body.userId },_id:req.params.id } )// on ajoute un like au paramètre "likes" du modèle sauce. On push l'id de l'utilisateur vers l'array "usersLiked"
+    .then(sauces=> res.status(200).json(sauces))
+    .catch(error => res.status(400).json({error}));
+  }else if(req.body.like ==-1){// si l'utilisateur dislike sauce
+    Sauce.updateOne({_id: req.params.id}, {$inc:{dislikes:1}, $push:{usersDisliked:req.body.userId },_id:req.params.id } ) //On ajoute un like au pramètre "dislikes" du modèle sauce. On push l'id de l'utilisateur vers l'array "usersDisliked"
+    .then(sauces=> res.status(200).json(sauces))
+    .catch(error => res.status(400).json({error}));
+  }else if(req.body.like ==0){ 
+    Sauce.findOne({_id: req.params.id}) //si l'utilisateur annule un like/dislike précédent.
+    .then(sauces=> {
+      if(sauces.usersLiked.find(user=> user===req.body.userId)){//en cas de like précédent
+        Sauce.updateOne({_id: req.params.id}, {$inc:{likes:-1}, $pull:{usersLiked:req.body.userId },_id:req.params.id } ) // on retire son ID de l'array "usersliked", on ajoute -1 à "likes" dans le modèle sauce
+        .then(sauces=> res.status(200).json(sauces))
+        .catch(error => res.status(400).json({error}));
+      }
+      if(sauces.usersDisliked.find(user=> user===req.body.userId)){//en cas de dislike précédent
+        Sauce.updateOne({_id: req.params.id}, {$inc:{dislikes:-1}, $pull:{usersDisliked:req.body.userId },_id:req.params.id } ) // on retire son ID de l'array "usersdisliked", on ajoute -1 à "dislikes" dans le modèle sauce
+        .then(sauces=> res.status(200).json(sauces))
+        .catch(error => res.status(400).json({error}));
+      }
+    })
+    .catch(error=>console.log(error));
+  }
+};
